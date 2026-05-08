@@ -22,6 +22,15 @@ export const IMG_EXTS = new Set([
 ]);
 export const DOC_EXTS = new Set(["docx", "doc"]);
 export const PDF_EXTS = new Set(["pdf"]);
+export const AUDIO_EXTS = new Set([
+  "mp3",
+  "wav",
+  "ogg",
+  "m4a",
+  "aac",
+  "flac",
+  "webm",
+]);
 export const TEXT_EXTS = new Set([
   "txt",
   "md",

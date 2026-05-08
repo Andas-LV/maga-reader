@@ -4,20 +4,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Database, FolderOpen, Search, X } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
-import { FileTree } from "./FileTree";
-import { FileViewer } from "./FileViewer";
-import { FileEntry } from "./types";
 import {
   clearFolderHandle,
+  FileEntry,
+  FileTree,
+  FileViewer,
   loadFolderHandle,
   loadViewedPaths,
   markViewed,
   saveFolderHandle,
-} from "./db";
+} from "@/features/viewer";
 
 export function ViewerPage() {
-  const [rootHandle, setRootHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const [savedHandle, setSavedHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [rootHandle, setRootHandle] =
+    useState<FileSystemDirectoryHandle | null>(null);
+  const [savedHandle, setSavedHandle] =
+    useState<FileSystemDirectoryHandle | null>(null);
   const [selectedFile, setSelectedFile] = useState<FileEntry | null>(null);
   const [fileIndex, setFileIndex] = useState<FileEntry[]>([]);
   const [indexBuilt, setIndexBuilt] = useState(false);
@@ -30,18 +32,15 @@ export function ViewerPage() {
   const hasApi =
     typeof window !== "undefined" && "showDirectoryPicker" in window;
 
-  // ─── Load persisted state on mount ──────────────────────────────────────────
+  // ─── Restore persisted state on mount ────────────────────────────────────────
 
   useEffect(() => {
     loadFolderHandle()
       .then(async (handle) => {
         if (!handle) return;
         const perm = await handle.queryPermission({ mode: "read" });
-        if (perm === "granted") {
-          setRootHandle(handle);
-        } else {
-          setSavedHandle(handle);
-        }
+        if (perm === "granted") setRootHandle(handle);
+        else setSavedHandle(handle);
       })
       .catch(console.error);
 
@@ -50,7 +49,7 @@ export function ViewerPage() {
       .catch(console.error);
   }, []);
 
-  // ─── Open folder ─────────────────────────────────────────────────────────────
+  // ─── Open folder ──────────────────────────────────────────────────────────────
 
   const openFolder = async () => {
     if (!hasApi) return;
@@ -68,7 +67,7 @@ export function ViewerPage() {
     }
   };
 
-  // ─── Restore saved folder (requires user gesture for requestPermission) ──────
+  // ─── Restore saved folder ─────────────────────────────────────────────────────
 
   const restoreFolder = async () => {
     if (!savedHandle) return;
@@ -88,7 +87,7 @@ export function ViewerPage() {
     clearFolderHandle().catch(console.error);
   };
 
-  // ─── Build full index ─────────────────────────────────────────────────────────
+  // ─── Full index build ─────────────────────────────────────────────────────────
 
   const buildIndex = async () => {
     if (!rootHandle || indexing) return;
@@ -99,7 +98,11 @@ export function ViewerPage() {
       for await (const [name, handle] of dir.entries()) {
         const path = parentPath ? `${parentPath} / ${name}` : name;
         if (handle.kind === "file") {
-          collected.push({ name, handle: handle as FileSystemFileHandle, path });
+          collected.push({
+            name,
+            handle: handle as FileSystemFileHandle,
+            path,
+          });
         } else {
           await walk(handle as FileSystemDirectoryHandle, path);
         }
@@ -112,7 +115,7 @@ export function ViewerPage() {
     setIndexing(false);
   };
 
-  // ─── Merge newly discovered files into index ──────────────────────────────────
+  // ─── Merge lazily discovered files into index ─────────────────────────────────
 
   const onIndexed = useCallback((entries: FileEntry[]) => {
     setFileIndex((prev) => {
@@ -157,7 +160,6 @@ export function ViewerPage() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-zinc-950">
-      {/* Header */}
       <header className="flex shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-900 px-4 py-2.5">
         <span className="whitespace-nowrap text-base font-bold text-blue-400">
           📚 Папка Просмотр
@@ -221,7 +223,6 @@ export function ViewerPage() {
         )}
       </header>
 
-      {/* Restore banner */}
       {savedHandle && !rootHandle && (
         <div className="flex shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-900/60 px-4 py-2 text-sm">
           <span className="text-zinc-400">
@@ -240,9 +241,7 @@ export function ViewerPage() {
         </div>
       )}
 
-      {/* Main */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Tree panel */}
         <div
           className="shrink-0 overflow-x-hidden overflow-y-auto border-r border-zinc-800 bg-zinc-900"
           style={{ width: panelWidth }}
@@ -265,13 +264,11 @@ export function ViewerPage() {
           )}
         </div>
 
-        {/* Resize handle */}
         <div
           className="w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-blue-500/30"
           onMouseDown={startResize}
         />
 
-        {/* Viewer panel */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <FileViewer file={selectedFile} onViewed={onViewed} />
         </div>

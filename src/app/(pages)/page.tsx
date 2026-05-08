@@ -1,5 +1,5 @@
-import { ViewerPage } from "./viewer/ViewerPage/ViewerPage";
+import { ViewerPage } from "@/widgets/viewer";
 
 export default function Home() {
-	return <ViewerPage />;
+  return <ViewerPage />;
 }
