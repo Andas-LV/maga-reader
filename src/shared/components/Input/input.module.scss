@@ -1,0 +1,122 @@
+.inputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.inputContainer {
+  position: relative;
+}
+
+.inputField {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: all 0.2s ease-in-out;
+  background: white;
+  outline: none;
+}
+
+.inputField:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inputField:disabled {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.inputField::placeholder {
+  color: transparent;
+}
+
+.floatingLabel {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: #9ca3af;
+  pointer-events: none;
+  transition: all 0.2s ease-in-out;
+  background: white;
+  padding: 0 0.25rem;
+  z-index: 1;
+}
+
+.floatingLabel.active,
+.inputField:focus + .floatingLabel,
+.inputField:not(:placeholder-shown) + .floatingLabel {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+.inputField:focus + .floatingLabel {
+  color: #3b82f6;
+}
+
+.floatingLabel.hasError {
+  color: #ef4444;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.passwordWrapper {
+  position: relative;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #6b7280;
+  transition: color 0.2s ease-in-out;
+  z-index: 2;
+}
+
+.eyeButton:hover {
+  color: #374151;
+}
+
+.eyeButton:focus {
+  outline: none;
+  color: #3b82f6;
+}
+
+.inputField.hasPasswordToggle {
+  padding-right: 48px;
+}
+
+.errorMessage {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #ef4444;
+}
+
+.helperText {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.inputField.hasError {
+  border-color: #ef4444;
+}
+
+.inputField.hasError:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
