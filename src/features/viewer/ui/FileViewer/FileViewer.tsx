@@ -18,7 +18,6 @@ import { Lightbox } from "./Lightbox";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-// "welcome" and "loading" are derived, not stored in state
 type ContentState =
   | { type: "pdf"; url: string }
   | { type: "image"; url: string }
@@ -44,8 +43,7 @@ type Props = {
 
 export function FileViewer({ file, onViewed }: Props) {
   const [content, setContent] = useState<ContentState | null>(null);
-  // Track which file's content is currently shown; derived loading state avoids
-  // synchronous setState inside the effect body (react-hooks/set-state-in-effect).
+  // Derived loading state: avoids synchronous setState inside the effect body
   const [loadedFile, setLoadedFile] = useState<FileEntry | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const prevUrl = useRef<string | null>(null);
@@ -129,19 +127,21 @@ export function FileViewer({ file, onViewed }: Props) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      {/* Filename bar */}
       <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2 text-sm">
         <span className="truncate font-medium text-zinc-200">{file.name}</span>
         <span className="ml-1 truncate text-xs text-zinc-600">{file.path}</span>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+      {/* Content — min-h-0 + flex-1 give a definite height so overflow-y-auto works */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {isLoading && <Loading />}
 
         {!isLoading && content?.type === "pdf" && (
           <iframe
             src={content.url}
             title={file.name}
-            className="w-full flex-1 border-none"
+            className="h-full w-full border-none"
             style={{ minHeight: "calc(100vh - 96px)" }}
           />
         )}
@@ -151,11 +151,11 @@ export function FileViewer({ file, onViewed }: Props) {
         )}
 
         {!isLoading && content?.type === "image" && (
-          <div className="flex flex-1 items-center justify-center bg-zinc-950 p-6">
+          <div className="flex h-full items-center justify-center bg-zinc-950 p-6">
             <img
               src={content.url}
               alt={file.name}
-              className="max-h-[calc(100vh-140px)] max-w-full cursor-zoom-in rounded object-contain shadow-2xl"
+              className="max-h-full max-w-full cursor-zoom-in rounded object-contain shadow-2xl"
               onClick={() => setLightboxSrc(content.url)}
             />
           </div>
@@ -182,7 +182,7 @@ export function FileViewer({ file, onViewed }: Props) {
         )}
 
         {!isLoading && content?.type === "unsupported" && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-zinc-600">
+          <div className="flex h-full flex-col items-center justify-center gap-4 text-zinc-600">
             <div className="text-5xl">📎</div>
             <p className="text-sm">
               Формат{" "}
@@ -199,7 +199,7 @@ export function FileViewer({ file, onViewed }: Props) {
         )}
 
         {!isLoading && content?.type === "error" && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-red-400">
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-red-400">
             <div className="text-4xl">⚠️</div>
             <p className="text-sm">{content.message}</p>
           </div>
@@ -217,11 +217,6 @@ export function FileViewer({ file, onViewed }: Props) {
 //   2. mammoth → raw text  (simpler, skips formatting)
 //   3. jszip   → direct XML parse (works even if mammoth fails entirely due to
 //      unsupported OLE objects like embedded MP3 files)
-//
-// The pre-built browser bundle is used to avoid Node.js modules (yauzl, fs)
-// that Turbopack may not swap via the package.json "browser" field.
-// UMD bundles expose exports as { default: ... } on dynamic import,
-// so we normalise with `mod.default ?? mod`.
 
 async function convertDocx(file: File): Promise<string> {
   const buf = await file.arrayBuffer();
@@ -231,7 +226,6 @@ async function convertDocx(file: File): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const m: any = mod.default ?? mod;
 
-  // Level 1: full HTML with embedded images
   try {
     const result = await m.convertToHtml(
       { arrayBuffer: buf },
@@ -243,7 +237,7 @@ async function convertDocx(file: File): Promise<string> {
               const base64 = await image.readAsBase64String();
               return { src: `data:${image.contentType};base64,${base64}` };
             } catch {
-              return { src: "" }; // skip images that cannot be read
+              return { src: "" };
             }
           },
         ),
@@ -251,20 +245,18 @@ async function convertDocx(file: File): Promise<string> {
     );
     if (result.value) return result.value;
   } catch {
-    /* fall through to next level */
+    /* fall through */
   }
 
-  // Level 2: plain text via mammoth
   try {
     const result = await m.extractRawText({ arrayBuffer: buf });
     if (result.value) {
       return `<div style="white-space:pre-wrap">${escapeHtml(result.value)}</div>`;
     }
   } catch {
-    /* fall through to final level */
+    /* fall through */
   }
 
-  // Level 3: direct XML extraction via jszip — works even with embedded OLE objects
   return extractDocxXml(buf);
 }
 

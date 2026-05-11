@@ -12,12 +12,6 @@ body {
 	vertical-align: baseline;
 }
 
-::-webkit-scrollbar {
-	width: 0;
-	height: 0;
-	display: none;
-}
-
 :root {
 	--radius: 0.625rem;
 	--background: oklch(1 0 0);
