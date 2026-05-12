@@ -6,9 +6,10 @@ import { FileEntry, FSEntry, loadDirEntries } from "../../model/types";
 import { SearchResults } from "./SearchResults";
 import { TreeFile } from "./TreeFile";
 import { TreeFolder } from "./TreeFolder";
+import { FileIcon } from "./FileIcon";
 
 type Props = {
-  rootHandle: FileSystemDirectoryHandle;
+  rootHandle: FileSystemDirectoryHandle | null;
   searchQuery: string;
   fileIndex: FileEntry[];
   indexBuilt: boolean;
@@ -29,12 +30,12 @@ export function FileTree({
   onIndexed,
 }: Props) {
   const [rootEntries, setRootEntries] = useState<FSEntry[]>([]);
-  // Derived loading state: avoids synchronous setState in effect body
   const [loadedHandle, setLoadedHandle] =
     useState<FileSystemDirectoryHandle | null>(null);
-  const loading = loadedHandle !== rootHandle;
+  const loading = rootHandle !== null && loadedHandle !== rootHandle;
 
   useEffect(() => {
+    if (!rootHandle) return;
     let cancelled = false;
     loadDirEntries(rootHandle).then((entries) => {
       if (cancelled) return;
@@ -64,6 +65,46 @@ export function FileTree({
         viewedPaths={viewedPaths}
         onSelect={onSelect}
       />
+    );
+  }
+
+  // Input mode: files loaded via <input>, no real directory handle
+  if (!rootHandle) {
+    if (fileIndex.length === 0) {
+      return (
+        <div className="p-6 text-center text-xs text-zinc-600">
+          Файлы не выбраны
+        </div>
+      );
+    }
+    return (
+      <div className="py-1">
+        <div className="px-3 py-1 text-xs text-zinc-600">
+          {fileIndex.length} файлов
+        </div>
+        {fileIndex.map((entry) => (
+          <div
+            key={entry.path}
+            className={`mx-1 cursor-pointer rounded px-3 py-1.5 transition-colors ${
+              selectedFile?.path === entry.path
+                ? "bg-blue-600/30"
+                : "hover:bg-zinc-800"
+            }`}
+            onClick={() => onSelect(entry)}
+          >
+            <div className="flex items-center gap-1.5 text-sm">
+              <FileIcon name={entry.name} />
+              <span className="truncate text-zinc-300">{entry.name}</span>
+              {viewedPaths.has(entry.path) && (
+                <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+              )}
+            </div>
+            <div className="truncate pl-5 text-xs text-zinc-600">
+              {entry.path}
+            </div>
+          </div>
+        ))}
+      </div>
     );
   }
 

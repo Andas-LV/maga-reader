@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Download, ChevronUp, ChevronDown } from "lucide-react";
+import { Download, ChevronUp, ChevronDown, ChevronLeft } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import Loading from "@/shared/components/Loading/Loading";
 import {
@@ -52,9 +52,10 @@ type Props = {
   file: FileEntry | null;
   onViewed: (path: string) => void;
   highlightQuery?: string;
+  onBack?: () => void;
 };
 
-export function FileViewer({ file, onViewed, highlightQuery = "" }: Props) {
+export function FileViewer({ file, onViewed, highlightQuery = "", onBack }: Props) {
   const [content, setContent] = useState<ContentState | null>(null);
   const [loadedFile, setLoadedFile] = useState<FileEntry | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -213,7 +214,15 @@ export function FileViewer({ file, onViewed, highlightQuery = "" }: Props) {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Filename bar */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2 text-sm">
+      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="shrink-0 rounded p-0.5 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+        )}
         <span className="truncate font-medium text-zinc-200">{file.name}</span>
         <span className="ml-1 truncate text-xs text-zinc-600">{file.path}</span>
 
@@ -273,9 +282,9 @@ export function FileViewer({ file, onViewed, highlightQuery = "" }: Props) {
         )}
 
         {!isLoading && content?.type === "docx" && (
-          <div className="p-8">
+          <div className="p-2 sm:p-8">
             <div
-              className="mx-auto max-w-3xl rounded bg-white p-10 text-zinc-900 shadow-lg"
+              className="mx-auto max-w-3xl rounded bg-white p-4 text-zinc-900 shadow-lg sm:p-10"
               style={{
                 fontFamily: "'Times New Roman', serif",
                 lineHeight: 1.8,
