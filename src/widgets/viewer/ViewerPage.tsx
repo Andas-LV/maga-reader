@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Database, FileText, FolderOpen, Search, BookOpen, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Database, FileText, FolderOpen, Search, BookOpen, Upload, X, Shuffle } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import {
@@ -13,6 +13,8 @@ import {
   FileTree,
   FileViewer,
   loadFolderHandle,
+  parseSections,
+  TicketDrawer,
   loadViewedPaths,
   markViewed,
   saveFolderHandle,
@@ -282,6 +284,20 @@ export function ViewerPage() {
     document.addEventListener("mouseup", onUp);
   };
 
+  // ─── Ticket sections ─────────────────────────────────────────────────────────
+
+  const [ticketOpen, setTicketOpen] = useState(false);
+
+  const allSections = useMemo(() => {
+    if (!contentIndexBuilt) return [];
+    const result = [];
+    for (const [path, text] of contentIndex) {
+      const file = fileIndex.find((f) => f.path === path);
+      if (file) result.push(...parseSections(text, file.name));
+    }
+    return result;
+  }, [contentIndex, contentIndexBuilt, fileIndex]);
+
   // ─── Render ───────────────────────────────────────────────────────────────────
 
   const sidebarVisible = !isMobile || mobileView === "sidebar";
@@ -365,6 +381,19 @@ export function ViewerPage() {
               : indexBuilt
                 ? "Проиндексировано ✓"
                 : "Индексировать всё"}
+          </Button>
+        )}
+
+        {/* Random ticket button — desktop, visible when sections are parsed */}
+        {allSections.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setTicketOpen(true)}
+            className="hidden shrink-0 text-xs sm:flex"
+          >
+            <Shuffle className="mr-1.5 h-3.5 w-3.5" />
+            Случайный билет
           </Button>
         )}
 
@@ -577,7 +606,23 @@ export function ViewerPage() {
             <BookOpen className="h-5 w-5" />
             Просмотр
           </button>
+          {allSections.length > 0 && (
+            <button
+              className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] text-zinc-400 transition-colors"
+              onClick={() => setTicketOpen(true)}
+            >
+              <Shuffle className="h-5 w-5" />
+              Билет
+            </button>
+          )}
         </nav>
+      )}
+
+      {ticketOpen && (
+        <TicketDrawer
+          sections={allSections}
+          onClose={() => setTicketOpen(false)}
+        />
       )}
     </div>
   );
