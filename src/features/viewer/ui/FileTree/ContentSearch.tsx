@@ -4,15 +4,58 @@ import { FileIcon } from "./FileIcon";
 
 type ContentMatch = {
   entry: FileEntry;
-  snippet: string;
+  snippets: string[];
 };
 
-function getSnippet(text: string, query: string): string {
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return "";
-  const from = Math.max(0, idx - 70);
-  const to = Math.min(text.length, idx + query.length + 70);
-  return (from > 0 ? "…" : "") + text.slice(from, to) + (to < text.length ? "…" : "");
+function getAllSnippets(text: string, query: string, maxSnippets = 3): string[] {
+  const q = query.toLowerCase();
+  const lower = text.toLowerCase();
+  const snippets: string[] = [];
+  let searchFrom = 0;
+
+  while (snippets.length < maxSnippets) {
+    const idx = lower.indexOf(q, searchFrom);
+    if (idx === -1) break;
+    const from = Math.max(0, idx - 60);
+    const to = Math.min(text.length, idx + query.length + 60);
+    snippets.push((from > 0 ? "…" : "") + text.slice(from, to) + (to < text.length ? "…" : ""));
+    searchFrom = idx + q.length;
+  }
+
+  return snippets;
+}
+
+function HighlightedText({ text, query }: { text: string; query: string }) {
+  const parts: { str: string; match: boolean }[] = [];
+  const q = query.toLowerCase();
+  let remaining = text;
+  let lower = remaining.toLowerCase();
+
+  while (true) {
+    const idx = lower.indexOf(q);
+    if (idx === -1) {
+      parts.push({ str: remaining, match: false });
+      break;
+    }
+    if (idx > 0) parts.push({ str: remaining.slice(0, idx), match: false });
+    parts.push({ str: remaining.slice(idx, idx + query.length), match: true });
+    remaining = remaining.slice(idx + query.length);
+    lower = remaining.toLowerCase();
+  }
+
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.match ? (
+          <mark key={i} className="rounded-sm bg-yellow-400/30 px-0.5 text-yellow-200">
+            {p.str}
+          </mark>
+        ) : (
+          <span key={i}>{p.str}</span>
+        )
+      )}
+    </>
+  );
 }
 
 type Props = {
@@ -48,7 +91,7 @@ export function ContentSearch({
     for (const entry of fileIndex) {
       const text = contentIndex.get(entry.path);
       if (!text || !text.toLowerCase().includes(q)) continue;
-      results.push({ entry, snippet: getSnippet(text, query) });
+      results.push({ entry, snippets: getAllSnippets(text, query) });
       if (results.length >= 100) break;
     }
 
@@ -120,7 +163,7 @@ export function ContentSearch({
         {matches.length} файлов{matches.length === 100 && " (первые 100)"}
       </div>
 
-      {matches.map(({ entry, snippet }, i) => (
+      {matches.map(({ entry, snippets }, i) => (
         <div
           key={i}
           className={`mx-1 cursor-pointer rounded px-3 py-2 transition-colors ${
@@ -136,11 +179,11 @@ export function ContentSearch({
             )}
           </div>
           <div className="truncate pl-5 text-xs text-zinc-600">{entry.path}</div>
-          {snippet && (
-            <div className="mt-0.5 line-clamp-2 pl-5 text-xs text-zinc-500">
-              {snippet}
+          {snippets.map((snippet, j) => (
+            <div key={j} className="mt-0.5 pl-5 text-xs text-zinc-500 leading-relaxed">
+              <HighlightedText text={snippet} query={query} />
             </div>
-          )}
+          ))}
         </div>
       ))}
     </div>

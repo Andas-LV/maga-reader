@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Download, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import Loading from "@/shared/components/Loading/Loading";
 import {
@@ -34,19 +34,34 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
+// Inject <mark data-match> only into text nodes, not inside HTML tags
+function highlightHtmlText(html: string, query: string): string {
+  if (!query.trim()) return html;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(escaped, "gi");
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (match, tag, text) => {
+    if (tag) return tag;
+    if (text) return text.replace(re, (m: string) => `<mark data-match>${m}</mark>`);
+    return match;
+  });
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 type Props = {
   file: FileEntry | null;
   onViewed: (path: string) => void;
+  highlightQuery?: string;
 };
 
-export function FileViewer({ file, onViewed }: Props) {
+export function FileViewer({ file, onViewed, highlightQuery = "" }: Props) {
   const [content, setContent] = useState<ContentState | null>(null);
-  // Derived loading state: avoids synchronous setState inside the effect body
   const [loadedFile, setLoadedFile] = useState<FileEntry | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [matchIndex, setMatchIndex] = useState(0);
+  const [totalMatches, setTotalMatches] = useState(0);
   const prevUrl = useRef<string | null>(null);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
 
   const isLoading = file !== null && loadedFile !== file;
 
@@ -57,6 +72,9 @@ export function FileViewer({ file, onViewed }: Props) {
       URL.revokeObjectURL(prevUrl.current);
       prevUrl.current = null;
     }
+
+    setMatchIndex(0);
+    setTotalMatches(0);
 
     const ext = getExt(file.name);
     let cancelled = false;
@@ -113,6 +131,73 @@ export function FileViewer({ file, onViewed }: Props) {
     };
   }, [file, onViewed]);
 
+  // Count matches and scroll to first one when content or query changes
+  useEffect(() => {
+    const el = contentAreaRef.current;
+    if (!el) return;
+
+    const marks = el.querySelectorAll<HTMLElement>("[data-match]");
+    setTotalMatches(marks.length);
+    setMatchIndex(marks.length > 0 ? 1 : 0);
+
+    marks.forEach((m, i) => {
+      m.style.background = i === 0 ? "#f59e0b" : "#fde04780";
+      m.style.color = i === 0 ? "#1c1917" : "";
+      m.style.borderRadius = "2px";
+      m.style.padding = "0 1px";
+    });
+
+    if (marks.length > 0) {
+      marks[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, highlightQuery]);
+
+  const goTo = useCallback(
+    (delta: 1 | -1) => {
+      const el = contentAreaRef.current;
+      if (!el) return;
+      const marks = el.querySelectorAll<HTMLElement>("[data-match]");
+      if (!marks.length) return;
+
+      const next = ((matchIndex - 1 + delta + marks.length) % marks.length) + 1;
+      setMatchIndex(next);
+
+      marks.forEach((m, i) => {
+        m.style.background = i === next - 1 ? "#f59e0b" : "#fde04780";
+        m.style.color = i === next - 1 ? "#1c1917" : "";
+      });
+
+      marks[next - 1].scrollIntoView({ behavior: "smooth", block: "center" });
+    },
+    [matchIndex]
+  );
+
+  // Keyboard navigation: F3 / Shift+F3
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "F3") {
+        e.preventDefault();
+        goTo(e.shiftKey ? -1 : 1);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [goTo]);
+
+  const q = highlightQuery.trim();
+  const showNav = q.length > 0 && (content?.type === "text" || content?.type === "docx");
+
+  const highlightedHtml =
+    showNav && content
+      ? content.type === "text"
+        ? highlightHtmlText(
+            `<pre style="white-space:pre-wrap;word-break:break-word;padding:1.5rem;font-family:monospace;font-size:0.875rem;color:#d4d4d8">${escapeHtml(content.content)}</pre>`,
+            q
+          )
+        : highlightHtmlText(content.html, q)
+      : null;
+
   if (!file) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-zinc-600">
@@ -131,10 +216,36 @@ export function FileViewer({ file, onViewed }: Props) {
       <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 bg-zinc-900 px-4 py-2 text-sm">
         <span className="truncate font-medium text-zinc-200">{file.name}</span>
         <span className="ml-1 truncate text-xs text-zinc-600">{file.path}</span>
+
+        {showNav && (
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <span className="text-xs text-zinc-400">
+              {totalMatches === 0
+                ? "Нет совпадений"
+                : `${matchIndex} / ${totalMatches}`}
+            </span>
+            <button
+              onClick={() => goTo(-1)}
+              disabled={totalMatches === 0}
+              className="rounded p-0.5 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100 disabled:opacity-30"
+              title="Предыдущее (Shift+F3)"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => goTo(1)}
+              disabled={totalMatches === 0}
+              className="rounded p-0.5 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100 disabled:opacity-30"
+              title="Следующее (F3)"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Content — min-h-0 + flex-1 give a definite height so overflow-y-auto works */}
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* Content */}
+      <div ref={contentAreaRef} className="min-h-0 flex-1 overflow-y-auto">
         {isLoading && <Loading />}
 
         {!isLoading && content?.type === "pdf" && (
@@ -170,15 +281,19 @@ export function FileViewer({ file, onViewed }: Props) {
                 lineHeight: 1.8,
                 fontSize: 14,
               }}
-              dangerouslySetInnerHTML={{ __html: content.html }}
+              dangerouslySetInnerHTML={{ __html: highlightedHtml ?? content.html }}
             />
           </div>
         )}
 
         {!isLoading && content?.type === "text" && (
-          <pre className="whitespace-pre-wrap break-words p-6 font-mono text-sm text-zinc-300">
-            {content.content}
-          </pre>
+          highlightedHtml ? (
+            <div dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+          ) : (
+            <pre className="whitespace-pre-wrap break-words p-6 font-mono text-sm text-zinc-300">
+              {content.content}
+            </pre>
+          )
         )}
 
         {!isLoading && content?.type === "unsupported" && (
@@ -212,11 +327,6 @@ export function FileViewer({ file, onViewed }: Props) {
 }
 
 // ─── DOCX conversion ──────────────────────────────────────────────────────────
-// Three-level fallback:
-//   1. mammoth → rich HTML (handles images, formatting)
-//   2. mammoth → raw text  (simpler, skips formatting)
-//   3. jszip   → direct XML parse (works even if mammoth fails entirely due to
-//      unsupported OLE objects like embedded MP3 files)
 
 async function convertDocx(file: File): Promise<string> {
   const buf = await file.arrayBuffer();

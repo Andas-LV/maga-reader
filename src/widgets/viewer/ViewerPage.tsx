@@ -387,7 +387,7 @@ export function ViewerPage() {
 
         {/* ── Right panel (viewer) ─────────────────────────────────────────── */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <FileViewer file={selectedFile} onViewed={onViewed} />
+          <FileViewer file={selectedFile} onViewed={onViewed} highlightQuery={contentSearchQuery} />
         </div>
       </div>
     </div>
