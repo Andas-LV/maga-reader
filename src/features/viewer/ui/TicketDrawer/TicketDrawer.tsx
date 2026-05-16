@@ -43,15 +43,24 @@ type Props = {
 export function TicketDrawer({ sections, onClose }: Props) {
   const [ticket, setTicket] = useState<ParsedSection[]>([]);
   const [count, setCount] = useState(2);
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
 
   const draw = useCallback(
     (n: number) => {
       if (!sections.length) return;
       const shuffled = [...sections].sort(() => Math.random() - 0.5);
       setTicket(shuffled.slice(0, n));
+      setRevealed(new Set());
     },
     [sections],
   );
+
+  const toggleReveal = (idx: number) =>
+    setRevealed((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
 
   useEffect(() => {
     draw(count);
@@ -103,26 +112,50 @@ export function TicketDrawer({ sections, onClose }: Props) {
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {ticket.map((section, idx) => (
-                <div key={`${section.fileName}-${section.number}`}>
-                  <div className="mb-2 flex items-center gap-2">
-                    <span className="rounded bg-blue-600/20 px-2 py-0.5 text-xs font-semibold text-blue-400">
-                      Вопрос {idx + 1}
-                    </span>
-                    <span className="text-xs text-zinc-600">
-                      #{section.number} · {section.fileName}
-                    </span>
+              {ticket.map((section, idx) => {
+                const isRevealed = revealed.has(idx);
+                return (
+                  <div key={`${section.fileName}-${section.number}`}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <span className="rounded bg-blue-600/20 px-2 py-0.5 text-xs font-semibold text-blue-400">
+                        Вопрос {idx + 1}
+                      </span>
+                      <span className="text-xs text-zinc-600">
+                        #{section.number} · {section.fileName}
+                      </span>
+                    </div>
+
+                    <h3 className="text-base font-semibold leading-snug text-zinc-100">
+                      {section.number}. {section.title}
+                    </h3>
+
+                    {section.body && (
+                      <>
+                        {isRevealed ? (
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
+                            {section.body}
+                          </p>
+                        ) : (
+                          <button
+                            onClick={() => toggleReveal(idx)}
+                            className="mt-3 rounded-lg border border-zinc-700 px-4 py-1.5 text-xs text-zinc-500 transition-colors hover:border-blue-500 hover:text-blue-400"
+                          >
+                            Показать ответ
+                          </button>
+                        )}
+                        {isRevealed && (
+                          <button
+                            onClick={() => toggleReveal(idx)}
+                            className="mt-2 text-xs text-zinc-600 hover:text-zinc-400"
+                          >
+                            Скрыть
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <h3 className="mb-2 text-base font-semibold leading-snug text-zinc-100">
-                    {section.number}. {section.title}
-                  </h3>
-                  {section.body && (
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
-                      {section.body}
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -132,7 +165,7 @@ export function TicketDrawer({ sections, onClose }: Props) {
           {/* Questions per ticket selector */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-zinc-500">Вопросов:</span>
-            {[1, 2, 3, 4].map((n) => (
+            {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 onClick={() => setCount(n)}
