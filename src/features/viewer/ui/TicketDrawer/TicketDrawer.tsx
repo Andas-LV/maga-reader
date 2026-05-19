@@ -81,14 +81,14 @@ export function TicketDrawer({ sections, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-zinc-900 shadow-2xl ring-1 ring-zinc-800">
+      <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-zinc-900 shadow-2xl ring-1 ring-zinc-800 sm:rounded-2xl">
 
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-zinc-800 px-5 py-4">
-          <span className="text-2xl">🎲</span>
+        <div className="flex shrink-0 items-center gap-3 border-b border-zinc-800 px-4 py-3 sm:px-5 sm:py-4">
+          <span className="text-xl sm:text-2xl">🎲</span>
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-zinc-100">Случайный билет</div>
             <div className="truncate text-xs text-zinc-500">
@@ -105,7 +105,7 @@ export function TicketDrawer({ sections, onClose }: Props) {
         </div>
 
         {/* Ticket questions */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
           {ticket.length === 0 ? (
             <div className="py-8 text-center text-sm text-zinc-600">
               Нажмите «Вытащить билет»
@@ -161,7 +161,7 @@ export function TicketDrawer({ sections, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center gap-3 border-t border-zinc-800 px-5 py-3">
+        <div className="flex shrink-0 flex-col gap-2 border-t border-zinc-800 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-5">
           {/* Questions per ticket selector */}
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-zinc-500">Вопросов:</span>
@@ -169,7 +169,7 @@ export function TicketDrawer({ sections, onClose }: Props) {
               <button
                 key={n}
                 onClick={() => setCount(n)}
-                className={`h-7 w-7 rounded text-sm font-medium transition-colors ${
+                className={`h-8 w-8 rounded text-sm font-medium transition-colors ${
                   count === n
                     ? "bg-blue-600 text-white"
                     : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
@@ -182,7 +182,7 @@ export function TicketDrawer({ sections, onClose }: Props) {
 
           <button
             onClick={() => draw(count)}
-            className="ml-auto flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500 active:bg-blue-700"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 active:bg-blue-700 sm:ml-auto sm:w-auto sm:px-5 sm:py-2"
           >
             <Shuffle className="h-4 w-4" />
             Вытащить билет

@@ -120,8 +120,10 @@ export function ViewerPage() {
     const input = document.createElement("input");
     input.type = "file";
     input.multiple = true;
-    // webkitdirectory allows folder selection on Android Chrome and desktop
+    // webkitdirectory allows folder selection on Android/desktop; ignored on iOS (individual files still work)
     input.setAttribute("webkitdirectory", "");
+    // Hint to iOS Files picker to show relevant formats
+    input.accept = ".docx,.doc,.txt,.md,.pdf,.csv,.json,.xml,.html,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.ogg,.m4a";
     input.onchange = () => {
       const files = Array.from(input.files ?? []);
       if (!files.length) return;
