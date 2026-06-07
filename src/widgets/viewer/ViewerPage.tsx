@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Database, FileText, FolderOpen, Search, BookOpen, Upload, X, Shuffle } from "lucide-react";
+import Link from "next/link";
+import { Database, FileText, FolderOpen, Search, BookOpen, Upload, X, Shuffle, GraduationCap } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import {
@@ -398,6 +399,13 @@ export function ViewerPage() {
             Случайный билет
           </Button>
         )}
+
+        <Button size="sm" variant="outline" asChild className="shrink-0">
+          <Link href="/mock-test">
+            <GraduationCap className="h-4 w-4" />
+            <span className="ml-1.5 hidden sm:inline">Пробный тест</span>
+          </Link>
+        </Button>
 
         {!hasApi && !isMobile && (
           <span className="text-xs text-amber-500">
